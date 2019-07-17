@@ -7,3 +7,5 @@ In order to build it, go to the root folder and write ``gradlew assemble``. This
 As a result the application will process your payload as if it was executed on scriptable-transform pod.
 
 The return of your application is printed on the command line.
+
+In order to test, you could use the ``hello.groovy`` file submitted in the main folder.
