@@ -95,6 +95,8 @@ public class RunFileApp implements ApplicationRunner {
         //Create the variable to bind with - and then bind the payload as variable with name payload to the binding.
         Binding bind = new Binding();
         bind.setProperty("payload", payload);
+        //bind.getVariable("result");
+
 
         //Instantiate the script engine
         GroovyScriptEngine engine = new GroovyScriptEngine(roots);
@@ -104,5 +106,6 @@ public class RunFileApp implements ApplicationRunner {
         logger.info("Starting Groovy script now!");
         Object obj = engine.run(groovyFile.toURI().toURL().toString(), bind);
         logger.info("Groovy script returned: "+ obj.toString());
+        logger.info("Groovy result was " + bind.getVariable("result").toString());
     }
 }

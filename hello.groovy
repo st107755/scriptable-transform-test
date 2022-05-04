@@ -1,4 +1,4 @@
-@Grab("org.codehaus.groovy:groovy-json")
+//@Grab("org.codehaus.groovy:groovy-json")
 import groovy.json.JsonSlurper
 import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
