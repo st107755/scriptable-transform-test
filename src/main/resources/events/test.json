@@ -1,0 +1,27 @@
+{
+  "data" : [{
+      "ue_pr": {
+        "data": {
+          "data": {
+            "body": {
+              "responseId": 123,
+              "caller": "caller",
+              "device": "device",
+              "source": "source",
+              "Route": "route",
+              "Result": "result",
+              "displayLocation": "location",
+              "personalizationCase":"case",
+              "personalizationAvailable": "available",
+              "personalizationRedirect": "redirect",
+              "personalizationVariant": "variant",
+              "personalizationCount": "count",
+              "priority": "high",
+              "error": "",
+              "errorStatus": ""
+            }
+          }
+        }
+      }
+  }]
+}

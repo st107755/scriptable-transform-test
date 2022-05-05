@@ -19,8 +19,13 @@ dependencies {
 
     implementation group: 'org.springframework.boot', name: 'spring-boot-autoconfigure', version: '2.2.13.RELEASE'
     implementation group: 'org.apache.ivy', name: 'ivy', version: '2.5.0'
-
+    implementation group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1'
+    implementation 'org.springframework.boot:spring-boot-starter-json:2.2.3.RELEASE'
 
     implementation group: 'org.codehaus.groovy', name: 'groovy', version: '1.8.8'
-    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    implementation 'net.javacrumbs.json-unit:json-unit:2.34.0'
+    //implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2.2'
+    //implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.2'
+    implementation group: 'junit', name: 'junit', version: '4.12'
+
 }
