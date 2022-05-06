@@ -21,7 +21,7 @@ import org.json.simple.JSONObject;
 
 public final class GroovyRunner {
 
-    public static JsonNode run(File script, String payload) throws IOException, ScriptException, ResourceException {
+    public static LinkedHashMap run(File script, String payload) throws IOException, ScriptException, ResourceException {
         //Build the roots (the scripts to load via script engine)
         String roots[] = new String[] { "." };
 
@@ -33,19 +33,8 @@ public final class GroovyRunner {
         GroovyScriptEngine engine = new GroovyScriptEngine(roots);
 
         //Start the script
-        Object obj = engine.run(getFilePath(script), bind);
-        LinkedHashMap result = (LinkedHashMap)bind.getVariable("result");
-        Iterator i = result.entrySet().iterator();
-        while (i.hasNext()){
-            Map.Entry entry = (Map.Entry) i.next();
-            if (entry.getValue() instanceof Timestamp){
-                String time = result.get(entry.getKey()).toString();
-                result.replace(entry.getKey(),time);
-            }
-        }
-        JSONObject simpleJson = new JSONObject(result);
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.readTree(simpleJson.toJSONString());
+        engine.run(getFilePath(script), bind);
+        return (LinkedHashMap)bind.getVariable("result");
     }
 
     public static String getFilePath(File script){

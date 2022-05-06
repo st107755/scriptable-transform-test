@@ -7,6 +7,7 @@ import org.json.simple.parser.JSONParser;
 
 import java.io.File;
 import java.io.FileReader;
+import java.util.LinkedHashMap;
 import java.util.logging.Logger;
 
 public class TestFramework {
@@ -29,7 +30,7 @@ public class TestFramework {
         }
     }
 
-    public JsonNode run(String payload) {
+    public LinkedHashMap run(String payload) {
         try {
             return GroovyRunner.run(groovyFile, payload);
         } catch (Exception e) {

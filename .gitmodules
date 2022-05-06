@@ -1,4 +1,4 @@
 [submodule "dp-ocs-segments"]
 	path = dp-ocs-segments
-	url = ~/git/dp-ocs-segments/.git
+	url = https://github.developer.allianz.io/Datalake/dp-ocs-segments.git
 	branch = origin/dev-af-custom-sink-ocs-api-maz-response
