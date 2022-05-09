@@ -41,7 +41,7 @@ public class Tests {
         assertThat(result.get("created_timestamp"),instanceOf(Timestamp.class));
         assertThat(result.get("error"),is(""));
     }
-    @Test
+    @Test(expected = java.lang.AssertionError.class)
     public void invalidEvent() {
         String event = "()";
         LinkedHashMap result = framework.run(event);

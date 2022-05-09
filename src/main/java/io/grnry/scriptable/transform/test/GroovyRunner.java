@@ -31,6 +31,8 @@ public final class GroovyRunner {
 
         //Instantiate the script engine
         GroovyScriptEngine engine = new GroovyScriptEngine(roots);
+        engine.getConfig().setWarningLevel(0);
+        //engine.getConfig().set
 
         //Start the script
         engine.run(getFilePath(script), bind);

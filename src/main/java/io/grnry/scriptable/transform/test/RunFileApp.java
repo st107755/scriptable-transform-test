@@ -7,13 +7,22 @@ import groovy.lang.Binding;
 import groovy.util.ResourceException;
 import groovy.util.ScriptException;
 
+import junit.framework.Test;
+import junit.framework.TestResult;
+import org.apache.tools.ant.taskdefs.optional.junit.JUnitResultFormatter;
+import org.apache.tools.ant.taskdefs.optional.junit.JUnitTest;
+import org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter;
+import org.junit.runner.Description;
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
+import org.junit.runner.notification.RunListener;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -29,10 +38,13 @@ public class RunFileApp implements ApplicationRunner {
         SpringApplication.run(RunFileApp.class, args);
     }
 
-    public boolean executeScript(){
-        return true;
+    public static void resultReport(Result result) {
+        System.out.println("Finished. Result: Failures: " +
+                result.getFailureCount() + ". Ignored: " +
+                result.getIgnoreCount() + ". Tests run: " +
+                result.getRunCount() + ". Time: " +
+                result.getRunTime() + "ms.");
     }
-
     /**
      * This method is intended to print the help directly into the console.
      */
@@ -52,60 +64,127 @@ public class RunFileApp implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        Logger logger = Logger.getLogger("RunFileApp");
+        JUnitCore junit = new JUnitCore();
+        junit.addListener(new JUnitResultFormatterAsRunListener(new XMLJUnitResultFormatter()) {
+            @Override
+            public void testStarted(Description description) throws Exception {
+                formatter.setOutput(new FileOutputStream(new File("test-result.xml")));
+                super.testStarted(description);
+            }
+        });
+        junit.run(Tests.class);
+    }
 
-        //Check input
-        logger.finer("NonOptionArguments: " + args.getNonOptionArgs());
-        logger.finer("Arguments: " + args.getOptionNames());
-        Set<String> options = args.getOptionNames();
-        Iterator<String> it = options.iterator();
-        while (it.hasNext()  ) {
-            String option = it.next();
-            logger.finer("Option: " + option);
+    /**
+     * Adopts {@link JUnitResultFormatter} into {@link RunListener},
+     * and also captures stdout/stderr by intercepting the likes of {@link System#out}.
+     *
+     * Because Ant JUnit formatter uses one stderr/stdout per one test suite,
+     * we capture each test case into a separate report file.
+     */
+    public static class JUnitResultFormatterAsRunListener extends RunListener {
+        protected final JUnitResultFormatter formatter;
+        private ByteArrayOutputStream stdout,stderr;
+        private PrintStream oldStdout,oldStderr;
+        private int problem;
+        private long startTime;
+
+        private JUnitResultFormatterAsRunListener(JUnitResultFormatter formatter) {
+            this.formatter = formatter;
         }
 
-        String script;
-        //Get the script file
-        if (args.getOptionValues("script") == null || args.getOptionValues("script").get(0) == null){
-            logger.severe("Variable script not reported. See help.");
-            printHelp();
-            return;
-        } else {
-            script = args.getOptionValues("script").get(0);
-        }
-        logger.info("Value of script: " + script);
-        //Get the payload
-        String payload;
-        if (args.getOptionValues("payload") == null || args.getOptionValues("payload").get(0) == null ){
-            logger.severe("Variable payload not reported. See help.");
-            printHelp();
-            return;
-        } else {
-            payload = args.getOptionValues("payload").get(0);
+        @Override
+        public void testRunStarted(Description description) throws Exception {
         }
 
-        //Get the file
-        File groovyFile = new File(script);
-        if(!groovyFile.isFile() || !groovyFile.canRead()){
-            System.out.println("Cannot read the file " + groovyFile);
+        @Override
+        public void testRunFinished(Result result) throws Exception {
         }
-        //Build the roots (the scripts to load via script engine)
-        String roots[] = new String[] { "." };
 
-        //Create the variable to bind with - and then bind the payload as variable with name payload to the binding.
-        Binding bind = new Binding();
-        bind.setProperty("payload", payload);
-        //bind.getVariable("result");
+        @Override
+        public void testStarted(Description description) throws Exception {
+            formatter.startTestSuite(new JUnitTest(description.getDisplayName()));
+            formatter.startTest(new DescriptionAsTest(description));
+            problem = 0;
+            startTime = System.currentTimeMillis();
 
+            this.oldStdout = System.out;
+            //this.oldStderr = System.err;
+            System.setOut(new PrintStream(stdout = new ByteArrayOutputStream()));
+            //System.setErr(new PrintStream(stderr = new ByteArrayOutputStream()));
+        }
 
-        //Instantiate the script engine
-        GroovyScriptEngine engine = new GroovyScriptEngine(roots);
+        @Override
+        public void testFinished(Description description) throws Exception {
+            System.out.flush();
+            //System.err.flush();
+            System.setOut(oldStdout);
+            //System.setErr(oldStderr);
 
-        //Start the script
-        logger.info("Writing following payload to Groovy Script: " + payload);
-        logger.info("Starting Groovy script now!");
-        Object obj = engine.run(groovyFile.toURI().toURL().toString(), bind);
-        logger.info("Groovy script returned: "+ obj.toString());
-        logger.info("Groovy result was " + bind.getVariable("result").toString());
+            formatter.setSystemOutput(stdout.toString());
+            //formatter.setSystemError(stderr.toString());
+            formatter.endTest(new DescriptionAsTest(description));
+
+            JUnitTest suite = new JUnitTest(description.getDisplayName());
+            suite.setCounts(1,problem,0);
+            suite.setRunTime(System.currentTimeMillis()-startTime);
+            formatter.endTestSuite(suite);
+        }
+
+        @Override
+        public void testFailure(Failure failure) throws Exception {
+            testAssumptionFailure(failure);
+        }
+
+        @Override
+        public void testAssumptionFailure(Failure failure) {
+            problem++;
+            formatter.addError(new DescriptionAsTest(failure.getDescription()), failure.getException());
+        }
+
+        @Override
+        public void testIgnored(Description description) throws Exception {
+            super.testIgnored(description);
+        }
+    }
+
+    public static class DescriptionAsTest implements Test {
+        private final Description description;
+
+        public DescriptionAsTest(Description description) {
+            this.description = description;
+        }
+
+        public int countTestCases() {
+            return 1;
+        }
+
+        public void run(TestResult result) {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * {@link JUnitResultFormatter} determines the test name by reflection.
+         */
+        public String getName() {
+            return description.getDisplayName();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            DescriptionAsTest that = (DescriptionAsTest) o;
+
+            if (!description.equals(that.description)) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return description.hashCode();
+        }
     }
 }
